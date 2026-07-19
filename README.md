@@ -1,0 +1,38 @@
+# oto-commit
+
+`oto-commit`, projenizdeki git değişikliklerini analiz eden ve Google Gemini yapay zeka modellerini kullanarak **Conventional Commits** standartlarına uygun, profesyonel commit mesajları üreten bir komut satırı arayüzü (CLI) aracıdır.
+
+## Kurulum
+
+Aracı bilgisayarınıza global olarak yüklemek için terminalinizde aşağıdaki komutu çalıştırmanız yeterlidir:
+
+    pip install oto-commit
+
+## Yapılandırma
+
+Aracı ilk kez kullanmadan önce Google Gemini API anahtarınızı tanımlamanız gerekmektedir. Bu komut, anahtarınızı bilgisayarınızdaki gizli bir dosyaya (~/.oto-commit-config.json) güvenli bir şekilde kaydeder:
+
+    oto-commit ayar --api-key <YOUR_GEMINI_API_KEY>
+
+## Kullanım
+
+Projenizde değişikliklerinizi hazırladıktan (git add .) sonra, tek yapmanız gereken aşağıdaki komutu çalıştırmaktır:
+
+    oto-commit uret
+
+Araç, çalışma dizininizdeki git diff çıktılarını otomatik olarak yakalar, yapay zekaya gönderir ve terminalinizde profesyonel bir commit mesajı önerisi sunar.
+
+## Gereksinimler
+
+- Python 3.7+
+- typer
+- rich
+
+## Güvenlik Politikası
+
+- API Anahtarı Saklama: API anahtarı kodun içerisinde yer almaz. Anahtar, kendi yerel bilgisayarınızda (kullanıcı ev dizininde) konfigürasyon dosyasında saklanır.
+- Gizlilik: Git diff verileriniz sadece yapay zeka ile commit mesajı üretmek için kullanılır.
+
+## Lisans
+
+MIT
