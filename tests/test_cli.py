@@ -80,3 +80,13 @@ def test_secret_in_diff_is_sent_after_confirmation(monkeypatch):
     result = runner.invoke(cli.app, ["generate"], input="y\n")
     assert sent == [diff]
     assert "feat: a" in result.output
+
+
+def test_model_output_8bit_c1_controls_are_stripped(plain_diff, monkeypatch):
+    # U+009B is the 8-bit CSI; xterm/VTE terminals act on it just like ESC [.
+    monkeypatch.setattr(cli, "generate_commit_message", lambda diff: "feat: a\x9b2J\x9d0;evil\x9c b")
+    result = runner.invoke(cli.app, ["generate"])
+    assert "\x9b" not in result.output
+    assert "\x9c" not in result.output
+    assert "\x9d" not in result.output
+    assert "feat: a2J0;evil b" in result.output

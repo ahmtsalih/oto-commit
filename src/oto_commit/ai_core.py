@@ -37,7 +37,7 @@ def generate_commit_message(diff_text: str) -> str:
             message = response_data['candidates'][0]['content']['parts'][0]['text']
             return message.strip()
     except urllib.error.HTTPError as e:
-        error_msg = e.read().decode('utf-8')
+        error_msg = e.read().decode('utf-8', errors='replace')
         return f"ERROR: API request rejected ({e.code}). {error_msg}"
     except Exception as e:
         return f"ERROR: {e}"

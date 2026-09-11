@@ -6,14 +6,16 @@ from .git_core import get_git_diff, get_excluded_files, find_secret_patterns
 from .ai_core import generate_commit_message
 from .config import save_api_key
 
-app = typer.Typer(help="AI-powered Git commit message assistant")
+# Local variables (which may hold the API key) must never be dumped into an unexpected traceback.
+app = typer.Typer(help="AI-powered Git commit message assistant", pretty_exceptions_show_locals=False)
 console = Console()
 
-# OSC (ESC ] ... BEL/ST), CSI and other ESC sequences, and every control character except \n and \t.
+# OSC (ESC ] ... BEL/ST), CSI and other ESC sequences, and every C0/C1 control character
+# except \n and \t (8-bit C1 codes such as U+009B act like ESC [ on xterm/VTE terminals).
 _CONTROL_CHARS = re.compile(
     r"\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)"
     r"|\x1b[@-_][0-?]*[ -/]*[@-~]"
-    r"|[\x00-\x08\x0b-\x1f\x7f]"
+    r"|[\x00-\x08\x0b-\x1f\x7f-\x9f]"
 )
 
 def _print_untrusted(text: str, style: str = ""):
