@@ -4,11 +4,13 @@
 
 ## Installation
 
-    pip install oto-commit
-
-Or straight from GitHub:
+> **Warning:** the package currently on PyPI (`0.1.2`) is outdated and predates the security fixes in this repository: it sends your API key in the request URL, prints model output as terminal markup and does not filter secrets out of the diff. Until `0.2.0` is published there, `pip install oto-commit` will give you that old version. Install from GitHub instead:
 
     pip install git+https://github.com/ahmtsalih/oto-commit.git
+
+Once `0.2.0` is on PyPI:
+
+    pip install oto-commit
 
 Requires Python 3.8 or newer and `git` on your PATH.
 
