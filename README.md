@@ -1,38 +1,64 @@
 # oto-commit
 
-`oto-commit`, projenizdeki git değişikliklerini analiz eden ve Google Gemini yapay zeka modellerini kullanarak **Conventional Commits** standartlarına uygun, profesyonel commit mesajları üreten bir komut satırı arayüzü (CLI) aracıdır.
+`oto-commit` is a command-line tool that reads your staged git changes and asks Google Gemini to write a professional commit message that follows the [Conventional Commits](https://www.conventionalcommits.org/) specification.
 
-## Kurulum
-
-Aracı bilgisayarınıza global olarak yüklemek için terminalinizde aşağıdaki komutu çalıştırmanız yeterlidir:
+## Installation
 
     pip install oto-commit
 
-## Yapılandırma
+Or straight from GitHub:
 
-Aracı ilk kez kullanmadan önce Google Gemini API anahtarınızı tanımlamanız gerekmektedir. Bu komut, anahtarınızı bilgisayarınızdaki gizli bir dosyaya (~/.oto-commit-config.json) güvenli bir şekilde kaydeder:
+    pip install git+https://github.com/ahmtsalih/oto-commit.git
 
-    oto-commit ayar --api-key <YOUR_GEMINI_API_KEY>
+Requires Python 3.8 or newer and `git` on your PATH.
 
-## Kullanım
+## Setup
 
-Projenizde değişikliklerinizi hazırladıktan (git add .) sonra, tek yapmanız gereken aşağıdaki komutu çalıştırmaktır:
+You need a Google Gemini API key (free at <https://aistudio.google.com/app/apikey>). Run:
 
-    oto-commit uret
+    oto-commit setup
 
-Araç, çalışma dizininizdeki git diff çıktılarını otomatik olarak yakalar, yapay zekaya gönderir ve terminalinizde profesyonel bir commit mesajı önerisi sunar.
+The key is requested with hidden input and stored in `~/.oto-commit-config.json`, readable only by your user account.
 
-## Gereksinimler
+Alternatively, set the `GEMINI_API_KEY` environment variable; it takes precedence over the config file:
 
-- Python 3.7+
-- typer
-- rich
+    # PowerShell
+    $env:GEMINI_API_KEY = "your-key"
 
-## Güvenlik Politikası
+    # bash / zsh
+    export GEMINI_API_KEY="your-key"
 
-- API Anahtarı Saklama: API anahtarı kodun içerisinde yer almaz. Anahtar, kendi yerel bilgisayarınızda (kullanıcı ev dizininde) konfigürasyon dosyasında saklanır.
-- Gizlilik: Git diff verileriniz sadece yapay zeka ile commit mesajı üretmek için kullanılır.
+Avoid `oto-commit setup --api-key <key>`: the key would end up in your shell history.
 
-## Lisans
+## Usage
+
+Stage your changes, then:
+
+    git add .
+    oto-commit generate
+
+The tool prints a suggested commit message. Review it and use it with `git commit -m "..."`.
+
+## What gets sent to Google
+
+The **staged diff is sent to the Google Gemini API** to generate the message. Do not use this tool on repositories whose content you are not allowed to share with a third party. On the free tier Google may use submitted content to improve its products; check the current Gemini API terms before relying on it.
+
+To reduce the risk of leaking secrets, `oto-commit`:
+
+- **never sends** files that usually contain secrets, and lists them so you know they were skipped: `.env`, `.env.*`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.ppk`, `*.jks`, `*.keystore`, `id_rsa`, `id_dsa`, `id_ecdsa`, `id_ed25519`
+- **scans the remaining diff** for things that look like API keys, tokens, private keys or password assignments, and asks for confirmation before sending
+- sends your API key in a request header rather than the URL, stores it with `0600` permissions, and prints model output as plain text so a malicious diff cannot inject terminal escape sequences or fake links
+
+These checks are heuristics, not guarantees. Review what you stage.
+
+## Development
+
+    git clone https://github.com/ahmtsalih/oto-commit.git
+    cd oto-commit
+    pip install -e .
+    pip install pytest
+    python -m pytest
+
+## License
 
 MIT

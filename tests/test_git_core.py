@@ -66,11 +66,11 @@ def _diff(line, filename="src/settings.py"):
 @pytest.mark.parametrize(
     "line,expected",
     [
-        ('GOOGLE_KEY = "AIzaSyA1234567890abcdefghijklmnopqrstuvw"', "Google API anahtarı"),
-        ('OPENAI = "sk-abcdefghijklmnopqrstuvwxyz123456"', "OpenAI/Anthropic anahtarı"),
-        ("-----BEGIN RSA PRIVATE KEY-----", "Özel anahtar (PEM)"),
-        ('password = "cokgizlisifre123"', "Şifre/sır ataması"),
-        ("aws_key = AKIAIOSFODNN7EXAMPLE", "AWS erişim anahtarı"),
+        ('GOOGLE_KEY = "AIzaSyA1234567890abcdefghijklmnopqrstuvw"', "Google API key"),
+        ('OPENAI = "sk-abcdefghijklmnopqrstuvwxyz123456"', "OpenAI/Anthropic key"),
+        ("-----BEGIN RSA PRIVATE KEY-----", "Private key (PEM)"),
+        ('password = "cokgizlisifre123"', "Password/secret assignment"),
+        ("aws_key = AKIAIOSFODNN7EXAMPLE", "AWS access key"),
         ('gh = "ghp_abcdefghijklmnopqrstuvwxyz0123456789"', "GitHub token"),
     ],
 )
@@ -89,5 +89,5 @@ def test_same_finding_is_reported_once_per_file():
 
 
 def test_normal_code_has_no_findings():
-    diff = _diff("def hesapla(x):\n+    return x * 2  # token sayisi, password alani yok")
+    diff = _diff("def hesapla(x):\n+    return x * 2  # token count, no password field")
     assert git_core.find_secret_patterns(diff) == []

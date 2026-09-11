@@ -8,7 +8,7 @@ setup(
     name="oto-commit",
     version="0.1.2", 
     author="Ahmet Salih",
-    description="Yapay Zeka Destekli Git Commit Asistanı",
+    description="AI-powered Git commit message assistant",
     long_description=long_description,  
     long_description_content_type="text/markdown", 
     packages=find_packages(where="src"),

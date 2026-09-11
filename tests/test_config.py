@@ -15,13 +15,13 @@ def config_file(tmp_path, monkeypatch):
     return path
 
 
-@pytest.mark.skipif(os.name == "nt", reason="POSIX dosya izinleri")
+@pytest.mark.skipif(os.name == "nt", reason="POSIX file permissions")
 def test_save_api_key_creates_file_readable_only_by_owner(config_file):
     config.save_api_key("KEY")
     assert stat.S_IMODE(config_file.stat().st_mode) == 0o600
 
 
-@pytest.mark.skipif(os.name == "nt", reason="POSIX dosya izinleri")
+@pytest.mark.skipif(os.name == "nt", reason="POSIX file permissions")
 def test_save_api_key_fixes_permissions_of_existing_file(config_file):
     config_file.write_text("{}")
     config_file.chmod(0o644)
@@ -30,7 +30,7 @@ def test_save_api_key_fixes_permissions_of_existing_file(config_file):
 
 
 def test_save_api_key_sets_owner_only_mode(config_file, monkeypatch):
-    # Windows gercek POSIX izinlerini gostermedigi icin chmod cagrisi gozlenir.
+    # Windows does not expose POSIX modes, so the chmod call itself is observed.
     modes = []
     real_chmod = os.chmod
 

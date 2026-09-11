@@ -10,12 +10,13 @@ def generate_commit_message(diff_text: str) -> str:
     api_key = load_api_key()
     
     if not api_key:
-        return "HATA: API anahtarı bulunamadı. Lütfen 'oto-commit ayar' komutunu çalıştırın veya GEMINI_API_KEY ortam değişkenini tanımlayın."
+        return "ERROR: No API key found. Run 'oto-commit setup' or set the GEMINI_API_KEY environment variable."
 
     prompt = f"""
-    Sen kıdemli bir yazılım mühendisisin. Aşağıdaki git diff çıktısını analiz et.
-    Değişikliklerin asıl amacını kavrayarak, Conventional Commits (feat:, fix:, chore:, refactor:, docs: vb.) formatına uygun, açıklayıcı, şık ve tam profesyonel tek bir Türkçe cümle yaz.
-    Sadece üretilen commit mesajını ver.
+    You are a senior software engineer. Analyse the git diff below.
+    Understand the real intent of the changes and write a single, clear, professional commit message in English
+    that follows the Conventional Commits format (feat:, fix:, chore:, refactor:, docs:, ...).
+    Return only the commit message, nothing else.
     
     {diff_text}
     """
@@ -25,7 +26,7 @@ def generate_commit_message(diff_text: str) -> str:
     }).encode('utf-8')
     
     try:
-        # Anahtar URL yerine header'da taşınır; böylece proxy/erişim loglarına düşmez.
+        # The key travels in a header rather than the URL, so it never ends up in proxy/access logs.
         req = urllib.request.Request(
             API_URL,
             data=data,
@@ -33,10 +34,10 @@ def generate_commit_message(diff_text: str) -> str:
         )
         with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as response:
             response_data = json.loads(response.read().decode('utf-8'))
-            mesaj = response_data['candidates'][0]['content']['parts'][0]['text']
-            return mesaj.strip()
+            message = response_data['candidates'][0]['content']['parts'][0]['text']
+            return message.strip()
     except urllib.error.HTTPError as e:
         error_msg = e.read().decode('utf-8')
-        return f"HATA: API İsteği Reddedildi ({e.code}). {error_msg}"
+        return f"ERROR: API request rejected ({e.code}). {error_msg}"
     except Exception as e:
-        return f"HATA: {e}"
+        return f"ERROR: {e}"

@@ -7,8 +7,8 @@ ENV_VAR = "GEMINI_API_KEY"
 
 def save_api_key(api_key: str):
     config = {"api_key": api_key}
-    # Dosya daha ilk anda yalnızca sahibinin okuyabileceği izinle (0600) açılır;
-    # chmod ise daha önce 0644 ile oluşturulmuş eski dosyaları da düzeltir.
+    # The file is created owner-only (0600) from the very first moment;
+    # the chmod also repairs older files that were created with 0644.
     fd = os.open(CONFIG_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(config, f)

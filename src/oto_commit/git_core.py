@@ -1,23 +1,23 @@
 import re
 import subprocess
 
-# Sır içerme ihtimali yüksek dosyalar. Bunlar diff'e hiç alınmaz,
-# dolayısıyla yapay zekaya da gönderilmez.
+# Files that very likely contain secrets. They are left out of the diff
+# entirely, so they are never sent to the AI.
 SENSITIVE_FILE_GLOBS = [
     "*.env", ".env.*",
     "*.pem", "*.key", "*.p12", "*.pfx", "*.ppk", "*.jks", "*.keystore",
     "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519",
 ]
 
-# Diff içinde sır gibi görünen kalıplar. Eşleşen metnin kendisi asla raporlanmaz.
+# Things in a diff that look like secrets. The matched text itself is never reported.
 SECRET_PATTERNS = [
-    ("Google API anahtarı", re.compile(r"AIza[0-9A-Za-z_\-]{35}")),
-    ("OpenAI/Anthropic anahtarı", re.compile(r"\bsk-[A-Za-z0-9_\-]{20,}")),
+    ("Google API key", re.compile(r"AIza[0-9A-Za-z_\-]{35}")),
+    ("OpenAI/Anthropic key", re.compile(r"\bsk-[A-Za-z0-9_\-]{20,}")),
     ("GitHub token", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36,}")),
-    ("AWS erişim anahtarı", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
+    ("AWS access key", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
     ("Slack token", re.compile(r"\bxox[abprs]-[A-Za-z0-9\-]{10,}")),
-    ("Özel anahtar (PEM)", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")),
-    ("Şifre/sır ataması", re.compile(
+    ("Private key (PEM)", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")),
+    ("Password/secret assignment", re.compile(
         r"\b(?:password|passwd|secret|api[_-]?key|token)\w*\s*[:=]\s*['\"][^'\"\s]{8,}['\"]",
         re.IGNORECASE,
     )),
@@ -33,8 +33,8 @@ def _run_git(args):
     )
 
 def _pathspecs(exclude: bool):
-    # "top": alt klasörden çalıştırılsa bile depo kökünden eşleşir.
-    # "glob": **/ ile her derinlikteki dosyayı yakalar.
+    # "top": match from the repository root even when run from a subdirectory.
+    # "glob": **/ matches the file at any depth.
     magic = "top,glob,exclude" if exclude else "top,glob"
     return [f":({magic})**/{g}" for g in SENSITIVE_FILE_GLOBS]
 
@@ -44,12 +44,12 @@ def get_git_diff() -> str:
         return result.stdout.strip()
     
     except subprocess.CalledProcessError:
-        return "HATA: Bu klasör bir Git deposu değil (git init çalıştırılmamış)."
+        return "ERROR: This folder is not a Git repository (run 'git init' first)."
     except FileNotFoundError:
-        return "HATA: Bilgisayarında Git komutu bulunamadı."
+        return "ERROR: The git command was not found on this computer."
 
 def get_excluded_files() -> list:
-    """Staged olup hassas görüldüğü için diff'e alınmayan dosyaların adları."""
+    """Names of staged files that were left out of the diff because they look sensitive."""
     try:
         result = _run_git(["diff", "--staged", "--name-only", "-z", "--", *_pathspecs(exclude=False)])
         return [name for name in result.stdout.split("\0") if name]
@@ -57,7 +57,7 @@ def get_excluded_files() -> list:
         return []
 
 def find_secret_patterns(diff_text: str) -> list:
-    """Diff içinde sır gibi görünen satırları arar; (dosya, açıklama) çiftleri döner."""
+    """Scan the diff for lines that look like secrets; returns (file, description) pairs."""
     findings = []
     current_file = "?"
     for line in diff_text.splitlines():

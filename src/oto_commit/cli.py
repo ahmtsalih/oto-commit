@@ -6,10 +6,10 @@ from .git_core import get_git_diff, get_excluded_files, find_secret_patterns
 from .ai_core import generate_commit_message
 from .config import save_api_key
 
-app = typer.Typer(help="Yapay Zeka Destekli Git Commit Asistanı")
+app = typer.Typer(help="AI-powered Git commit message assistant")
 console = Console()
 
-# OSC (ESC ] ... BEL/ST), CSI/diğer ESC dizileri ve \n, \t dışındaki kontrol karakterleri.
+# OSC (ESC ] ... BEL/ST), CSI and other ESC sequences, and every control character except \n and \t.
 _CONTROL_CHARS = re.compile(
     r"\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)"
     r"|\x1b[@-_][0-?]*[ -/]*[@-~]"
@@ -17,63 +17,65 @@ _CONTROL_CHARS = re.compile(
 )
 
 def _print_untrusted(text: str, style: str = ""):
-    """Model/API'den gelen metni markup yorumlamadan ve terminal kaçış dizilerini
-    ayıklayarak basar; diff'e gömülü bir prompt injection terminali kandıramaz."""
+    """Print text that came from the model/API without interpreting Rich markup and with
+    terminal escape sequences stripped, so a prompt injection in the diff cannot drive the terminal."""
     console.print(Text(_CONTROL_CHARS.sub("", text), style=style))
 
 @app.command()
-def ayar(
+def setup(
     api_key: str = typer.Option(
         ...,
-        prompt="Google Gemini API Anahtarınız",
+        prompt="Your Google Gemini API key",
         hide_input=True,
-        help="Komut satırında vermek önerilmez (shell geçmişine düşer); boş bırakın, gizli olarak sorulur.",
+        help="Passing the key on the command line is not recommended (it ends up in your shell history); omit it to be prompted with hidden input.",
     )
 ):
+    """Store your Google Gemini API key."""
     save_api_key(api_key)
-    console.print("[bold green]✔ API Anahtarı başarıyla kaydedildi![/bold green]")
+    console.print("[bold green]✔ API key saved.[/bold green]")
 
 @app.command()
-def uret():
-    console.print("\n[bold cyan]🤖 AI Asistanı uyandırılıyor...[/bold cyan]")
-    console.print("[yellow]🔍 Değişen kod satırları taranıyor...[/yellow]")
-    
+def generate():
+    """Generate a commit message for the staged changes."""
+    console.print("\n[bold cyan]🤖 Waking up the AI assistant...[/bold cyan]")
+    console.print("[yellow]🔍 Scanning staged changes...[/yellow]")
+
     diff_text = get_git_diff()
-    
-    if diff_text.startswith("HATA"):
+
+    if diff_text.startswith("ERROR"):
         console.print(f"[bold red]❌ {diff_text}[/bold red]")
         raise typer.Exit()
 
     excluded = get_excluded_files()
     if excluded:
-        console.print("[yellow]⚠ Hassas görünen dosyalar yapay zekaya gönderilmedi:[/yellow]")
+        console.print("[yellow]⚠ These files look sensitive and were not sent to the AI:[/yellow]")
         for name in excluded:
             _print_untrusted(f"   • {name}", "yellow")
-        
+
     if not diff_text:
-        console.print("[bold red]❌ Hata: Değişiklik bulunamadı! 'git add .' yapmayı unutmayın.[/bold red]")
+        console.print("[bold red]❌ Error: no staged changes found. Did you forget 'git add .'?[/bold red]")
         raise typer.Exit()
 
     findings = find_secret_patterns(diff_text)
     if findings:
-        console.print("[bold red]⚠ Diff içinde sır gibi görünen içerik var:[/bold red]")
+        console.print("[bold red]⚠ The diff contains content that looks like a secret:[/bold red]")
         for file_name, kind in findings:
             _print_untrusted(f"   • {file_name}: {kind}", "red")
-        console.print("[red]Bu içerik olduğu gibi Google'a gönderilecek.[/red]")
-        if not typer.confirm("Yine de gönderilsin mi?", default=False):
+        console.print("[red]This content would be sent to Google as-is.[/red]")
+        if not typer.confirm("Send it anyway?", default=False):
             raise typer.Exit()
 
-    console.print("[bold green]✔ Değişiklikler başarıyla yakalandı![/bold green]")
-    console.print("[yellow]🧠 Yapay zeka analiz edip profesyonel bir mesaj üretiyor...[/yellow]")
-    
-    commit_mesaji = generate_commit_message(diff_text)
-    
-    if commit_mesaji.startswith("HATA"):
-        _print_untrusted(f"❌ {commit_mesaji}", "bold red")
+    console.print("[bold green]✔ Changes captured.[/bold green]")
+    console.print("[yellow]🧠 The AI is analysing the changes and writing a message...[/yellow]")
+
+    commit_message = generate_commit_message(diff_text)
+
+    if commit_message.startswith("ERROR"):
+        _print_untrusted(f"❌ {commit_message}", "bold red")
         raise typer.Exit()
-        
-    console.print(f"\n[bold green]✨ Önerilen Commit Mesajı:[/bold green]")
-    _print_untrusted(commit_mesaji, "bold white")
+
+    console.print(f"\n[bold green]✨ Suggested commit message:[/bold green]")
+    _print_untrusted(commit_message, "bold white")
     console.print()
 
 def main():
